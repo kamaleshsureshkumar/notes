@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22_04
+    runs-on: ubuntu-22.04   # <-- Make sure it has a dot (.) instead of an underscore (_)
 
     steps:
     - name: Checkout Code
