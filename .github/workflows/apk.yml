@@ -30,18 +30,31 @@ jobs:
         sudo apt-get install -y \
           git zip unzip autoconf libtool pkg-config zlib1g-dev \
           libncurses6 libncursesw6 libffi-dev libssl-dev build-essential \
-          ccache libltdl-dev
+          ccache libltdl-dev wget
 
     - name: Install Buildozer and Cython
       run: |
         python -m pip install --upgrade pip
         pip install "cython<3.0.0" buildozer python-for-android
 
-    - name: Prepare Buildozer SDK Directories
-      working-directory: src
+    - name: Fix Android SDK Command-Line Tools for Buildozer
       run: |
-        # Pre-create the directory structure Buildozer looks for to prevent missing path errors
-        mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools/33.0.2
+        # Create standard buildozer android SDK folders
+        ANDROID_SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
+        mkdir -p "$ANDROID_SDK_DIR/tools/bin"
+        
+        # Download official Android Command-Line Tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
+        unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools-temp
+        
+        # Structure them so legacy buildozer scripts can find 'tools/bin/sdkmanager'
+        mkdir -p /tmp/cmdtools-temp/cmdline-tools/latest
+        mv /tmp/cmdtools-temp/cmdline-tools/bin /tmp/cmdtools-temp/cmdline-tools/latest/
+        mv /tmp/cmdtools-temp/cmdline-tools/lib /tmp/cmdtools-temp/cmdline-tools/latest/
+        mv /tmp/cmdtools-temp/cmdline-tools/source.properties /tmp/cmdtools-temp/cmdline-tools/latest/ || true
+        
+        cp -r /tmp/cmdtools-temp/cmdline-tools/* "$ANDROID_SDK_DIR/"
+        ln -s "$ANDROID_SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_SDK_DIR/tools/bin/sdkmanager" || true
 
     - name: Build APK with Buildozer
       working-directory: src
