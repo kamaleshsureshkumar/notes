@@ -16,10 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -50,7 +50,6 @@ jobs:
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
 
-          # Buildozer sometimes expects legacy path
           mkdir -p "$ANDROID_HOME/tools/bin"
           ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"
           ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" "$ANDROID_HOME/tools/bin/avdmanager" || true
@@ -73,7 +72,7 @@ jobs:
 
       - name: Install compatible Python build deps
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade "pip<24" setuptools wheel
           python -m pip install "sh<2.0" "cython<3.0.0" "buildozer==1.5.0" "python-for-android==2024.01.21"
 
       - name: Build APK
