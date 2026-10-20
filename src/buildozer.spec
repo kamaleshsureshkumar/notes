@@ -8,7 +8,10 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 
 version = 0.1
-requirements = python3==3.11.9,kivy
+# Keep the Python recipe unpinned: python-for-android manages the compatible
+# hostpython3 version for the selected toolchain. Pinning python3==3.11.9 caused
+# a hostpython3 mismatch (3.11.9 != 3.14.2) in CI.
+requirements = python3,kivy
 
 orientation = portrait
 fullscreen = 0
