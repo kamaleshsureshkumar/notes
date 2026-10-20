@@ -439,6 +439,7 @@ log_level = 2
 warn_on_root = 1
 
 android.sdk_path = /opt/Android/Sdk
+android.ndk_path = /opt/Android/Sdk/ndk/25.2.9519653
 android.build_tools_version = 33.0.2
 android.api = 33
 android.minapi = 24
