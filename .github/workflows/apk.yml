@@ -13,7 +13,7 @@ jobs:
       ANDROID_SDK_ROOT: /opt/Android/Sdk
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python 3.10
@@ -24,55 +24,61 @@ jobs:
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "17"
 
-      - name: Install System Dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip autoconf libtool pkg-config zlib1g-dev \
-            libncurses6 libncursesw6 libffi-dev libssl-dev build-essential \
-            ccache libltdl-dev wget ca-certificates
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            git zip unzip curl build-essential pkg-config \
+            libssl-dev libffi-dev zlib1g-dev libbz2-dev \
+            libreadline-dev libsqlite3-dev libncursesw5-dev \
+            libncursesw6 wget ca-certificates autoconf libtool
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android command line tools
+        run: |
+          set -eux
+          mkdir -p "$ANDROID_HOME"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+          mkdir -p /tmp/cmdline-tools
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+          rm -rf "$ANDROID_HOME/cmdline-tools"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          ls -R "$ANDROID_HOME"
 
       - name: Install Android SDK packages
         run: |
           set -eux
-          mkdir -p "$ANDROID_HOME"
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "cmdline-tools;latest"
 
+      - name: Configure Buildozer SDK path
+        run: |
+          set -eux
           mkdir -p ~/.buildozer/android/platform
           rm -rf ~/.buildozer/android/platform/android-sdk
           ln -sfn "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
-
-          echo "SDK path:"
           ls -ld "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
-          echo "sdkmanager path:"
-          command -v sdkmanager
-          sdkmanager --list | head -n 20
 
-      - name: Install Buildozer and Cython
+      - name: Install Buildozer + Python-for-Android
         run: |
-          python -m pip install --upgrade "pip<24"
-          python -m pip install --upgrade \
-            "setuptools<70" \
-            "wheel" \
-            "cython<3.0.0" \
-            "sh<2.0" \
-            "buildozer==1.5.0" \
-            "python-for-android==2024.01.21"
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "cython<3.0.0" "sh<2.0" "buildozer==1.5.0" "python-for-android==2024.01.21"
 
-      - name: Build APK with Buildozer
+      - name: Build APK
         working-directory: src
         run: |
+          set -eux
           buildozer -v android debug
 
-      - name: Upload APK Artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kivy-android-apk
+          name: notes-kivy-apk
           path: src/bin/*.apk

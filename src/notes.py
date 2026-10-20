@@ -1,124 +1,72 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
 import json
-from ttkbootstrap import Style
+import os
 
-# Create the main window
-root = tk.Tk()
-root.title("Notes App")
-root.geometry("500x500")
-style = Style(theme='journal')
-style = ttk.Style()
+DATA_FILE = "notes.json"
 
-# Configure the tab font to be bold
-style.configure("TNotebook.Tab", font=("TkDefaultFont", 14, "bold"))
+class NotesApp(App):
+    def build(self):
+        self.notes = self.load_notes()
 
-# Create the notebook to hold the notes
-notebook = ttk.Notebook(root, style="TNotebook")
+        root = BoxLayout(orientation="vertical", spacing=10, padding=10)
 
-# Load saved notes
-notes = {}
-try:
-    with open("notes.json", "r") as f:
-        notes = json.load(f)
-except FileNotFoundError:
-    pass
+        form = BoxLayout(size_hint_y=None, height="48dp", spacing=10)
+        self.title_input = TextInput(hint_text="Title")
+        form.add_widget(self.title_input)
 
-# Create the notebook to hold the notes
-notebook = ttk.Notebook(root)
-notebook.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        add_button = Button(text="Add Note")
+        add_button.bind(on_press=self.add_note)
+        form.add_widget(add_button)
 
-# Create a function to add a new note
-def add_note():
-    # Create a new tab for the note
-    note_frame = ttk.Frame(notebook, padding=10)
-    notebook.add(note_frame, text="New Note")
-    
-    # Create entry widgets for the title and content of the note
-    title_label = ttk.Label(note_frame, text="Title:")
-    title_label.grid(row=0, column=0, padx=10, pady=10, sticky="W")
-    
-    title_entry = ttk.Entry(note_frame, width=40)
-    title_entry.grid(row=0, column=1, padx=10, pady=10)
-    
-    content_label = ttk.Label(note_frame, text="Content:")
-    content_label.grid(row=1, column=0, padx=10, pady=10, sticky="W")
-    
-    content_entry = tk.Text(note_frame, width=40, height=10)
-    content_entry.grid(row=1, column=1, padx=10, pady=10)
-    
-    # Create a function to save the note
-    def save_note():
-        # Get the title and content of the note
-        title = title_entry.get()
-        content = content_entry.get("1.0", tk.END)
-        
-        # Add the note to the notes dictionary
-        notes[title] = content.strip()
-        
-        # Save the notes dictionary to the file
-        with open("notes.json", "w") as f:
-            json.dump(notes, f)
-        
-        # Add the note to the notebook
-        note_content = tk.Text(notebook, width=40, height=10)
-        note_content.insert(tk.END, content)
-        notebook.forget(notebook.select())
-        notebook.add(note_content, text=title)
-        
-    # Add a save button to the note frame
-    save_button = ttk.Button(note_frame, text="Save", 
-                             command=save_note, style="secondary.TButton")
-    save_button.grid(row=2, column=1, padx=10, pady=10)
+        root.add_widget(form)
 
-def load_notes():
-    try:
-        with open("notes.json", "r") as f:
-            notes = json.load(f)
+        self.list_container = GridLayout(cols=1, spacing=10, size_hint_y=None)
+        self.list_container.bind(minimum_height=self.list_container.setter("height"))
+        root.add_widget(ScrollView(size_hint=(1, 1), do_scroll_x=False))
+        root.children[1].add_widget(self.list_container)
 
-        for title, content in notes.items():
-            # Add the note to the notebook
-            note_content = tk.Text(notebook, width=40, height=10)
-            note_content.insert(tk.END, content)
-            notebook.add(note_content, text=title)
+        self.refresh_notes()
+        return root
 
-    except FileNotFoundError:
-        # If the file does not exist, do nothing
-        pass
+    def load_notes(self):
+        if os.path.exists(DATA_FILE):
+            try:
+                with open(DATA_FILE, "r") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
 
-# Call the load_notes function when the app starts
-load_notes()
+    def save_notes(self):
+        with open(DATA_FILE, "w") as f:
+            json.dump(self.notes, f)
 
-# Create a function to delete a note
-def delete_note():
-    # Get the current tab index
-    current_tab = notebook.index(notebook.select())
-    
-    # Get the title of the note to be deleted
-    note_title = notebook.tab(current_tab, "text")
-    
-    # Show a confirmation dialog
-    confirm = messagebox.askyesno("Delete Note", 
-                                  f"Are you sure you want to delete {note_title}?")
-    
-    if confirm:
-        # Remove the note from the notebook
-        notebook.forget(current_tab)
-        
-        # Remove the note from the notes dictionary
-        notes.pop(note_title)
-        
-        # Save the notes dictionary to the file
-        with open("notes.json", "w") as f:
-            json.dump(notes, f)
+    def add_note(self, instance):
+        title = self.title_input.text.strip()
+        if not title:
+            return
+        self.notes[title] = "New note"
+        self.save_notes()
+        self.title_input.text = ""
+        self.refresh_notes()
 
-# Add buttons to the main window
-new_button = ttk.Button(root, text="New Note", 
-                        command=add_note, style="info.TButton")
-new_button.pack(side=tk.LEFT, padx=10, pady=10)
+    def refresh_notes(self):
+        self.list_container.clear_widgets()
+        for title in self.notes:
+            btn = Button(text=title, size_hint_y=None, height="48dp")
+            btn.bind(on_press=self.open_note)
+            self.list_container.add_widget(btn)
 
-delete_button = ttk.Button(root, text="Delete", 
-                           command=delete_note, style="primary.TButton")
-delete_button.pack(side=tk.LEFT, padx=10, pady=10)
+    def open_note(self, instance):
+        title = instance.text
+        note_content = self.notes.get(title, "")
+        print("Open note:", title, note_content)
 
-root.mainloop()
+if __name__ == "__main__":
+    NotesApp().run()
