@@ -37,16 +37,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install "cython<3.0.0" buildozer python-for-android
 
-    - name: Build APK with Buildozer
-      working-directory: src
-      env:
-        ACCEPT_BUILD_LICENSES: "y"
+    - name: Pre-accept Android SDK Licenses
       run: |
-        # Pre-accept licenses non-interactively
         mkdir -p ~/.android
         touch ~/.android/repositories.cfg
-        
-        # Execute buildozer without 'yes |' pipe
+
+    - name: Build APK with Buildozer
+      working-directory: src
+      run: |
         buildozer -v android debug
 
     - name: Upload APK Artifact
