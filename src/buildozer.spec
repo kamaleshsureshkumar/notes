@@ -441,7 +441,5 @@ warn_on_root = 1
 android.api = 33
 android.minapi = 24
 android.ndk = 25b
+android.build_tools_version = 33.0.2
 android.accept_sdk_license = True
-
-# Explicitly tell buildozer where the SDK is located
-android.sdk_path = /opt/android-sdk
