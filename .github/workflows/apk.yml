@@ -37,10 +37,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install "cython<3.0.0" buildozer python-for-android
 
+    - name: Prepare Buildozer SDK Directories
+      working-directory: src
+      run: |
+        # Pre-create the directory structure Buildozer looks for to prevent missing path errors
+        mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools/33.0.2
+
     - name: Build APK with Buildozer
       working-directory: src
-      env:
-        AA_BUILD_ACCEPT_LICENSE: "1"
       run: |
         buildozer -v android debug
 
