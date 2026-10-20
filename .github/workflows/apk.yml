@@ -41,15 +41,12 @@ jobs:
           set -eux
           mkdir -p "$ANDROID_HOME"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
-
           rm -rf /tmp/cmdline-tools
           mkdir -p /tmp/cmdline-tools
           unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
-
           rm -rf "$ANDROID_HOME/cmdline-tools"
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
-
           mkdir -p "$ANDROID_HOME/tools/bin"
           ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"
           ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" "$ANDROID_HOME/tools/bin/avdmanager" || true
@@ -69,6 +66,13 @@ jobs:
           mkdir -p ~/.buildozer/android/platform
           rm -rf ~/.buildozer/android/platform/android-sdk
           ln -sfn "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
+
+      - name: Clean stale Buildozer cache
+        run: |
+          set -eux
+          rm -rf ~/.buildozer
+          rm -rf "$GITHUB_WORKSPACE/src/.buildozer"
+          rm -rf "$GITHUB_WORKSPACE/src/bin"
 
       - name: Install compatible Python build deps
         run: |
