@@ -42,8 +42,11 @@ jobs:
 
     - name: Install Android SDK components
       run: |
-        yes | sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+        "platform-tools" \
+        "platforms;android-33" \
+        "build-tools;33.0.2"
 
     - name: Build APK with Buildozer
       working-directory: src
