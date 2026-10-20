@@ -27,7 +27,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install system dependencies
+      - name: Install OS dependencies
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -41,22 +41,28 @@ jobs:
           set -eux
           mkdir -p "$ANDROID_HOME"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+
+          rm -rf /tmp/cmdline-tools
           mkdir -p /tmp/cmdline-tools
           unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+
           rm -rf "$ANDROID_HOME/cmdline-tools"
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
-          ls -R "$ANDROID_HOME"
 
-      - name: Install Android SDK packages
+          # Buildozer sometimes expects legacy path
+          mkdir -p "$ANDROID_HOME/tools/bin"
+          ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"
+          ln -sf "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" "$ANDROID_HOME/tools/bin/avdmanager" || true
+
+      - name: Install Android packages
         run: |
           set -eux
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+          yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/tools/bin/sdkmanager" \
             "platform-tools" \
             "platforms;android-33" \
-            "build-tools;33.0.2" \
-            "cmdline-tools;latest"
+            "build-tools;33.0.2"
 
       - name: Configure Buildozer SDK path
         run: |
@@ -64,12 +70,11 @@ jobs:
           mkdir -p ~/.buildozer/android/platform
           rm -rf ~/.buildozer/android/platform/android-sdk
           ln -sfn "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
-          ls -ld "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
 
-      - name: Install Buildozer + Python-for-Android
+      - name: Install compatible Python build deps
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install "cython<3.0.0" "sh<2.0" "buildozer==1.5.0" "python-for-android==2024.01.21"
+          python -m pip install "sh<2.0" "cython<3.0.0" "buildozer==1.5.0" "python-for-android==2024.01.21"
 
       - name: Build APK
         working-directory: src
@@ -80,5 +85,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: notes-kivy-apk
+          name: notes-apk
           path: src/bin/*.apk

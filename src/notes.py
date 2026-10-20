@@ -16,20 +16,20 @@ class NotesApp(App):
 
         root = BoxLayout(orientation="vertical", spacing=10, padding=10)
 
-        form = BoxLayout(size_hint_y=None, height="48dp", spacing=10)
+        top = BoxLayout(size_hint_y=None, height="48dp", spacing=10)
         self.title_input = TextInput(hint_text="Title")
-        form.add_widget(self.title_input)
-
         add_button = Button(text="Add Note")
         add_button.bind(on_press=self.add_note)
-        form.add_widget(add_button)
-
-        root.add_widget(form)
+        top.add_widget(self.title_input)
+        top.add_widget(add_button)
+        root.add_widget(top)
 
         self.list_container = GridLayout(cols=1, spacing=10, size_hint_y=None)
         self.list_container.bind(minimum_height=self.list_container.setter("height"))
-        root.add_widget(ScrollView(size_hint=(1, 1), do_scroll_x=False))
-        root.children[1].add_widget(self.list_container)
+
+        scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
+        scroll.add_widget(self.list_container)
+        root.add_widget(scroll)
 
         self.refresh_notes()
         return root
@@ -51,10 +51,11 @@ class NotesApp(App):
         title = self.title_input.text.strip()
         if not title:
             return
-        self.notes[title] = "New note"
-        self.save_notes()
-        self.title_input.text = ""
-        self.refresh_notes()
+        if title not in self.notes:
+            self.notes[title] = "New note"
+            self.save_notes()
+            self.title_input.text = ""
+            self.refresh_notes()
 
     def refresh_notes(self):
         self.list_container.clear_widgets()
@@ -65,8 +66,7 @@ class NotesApp(App):
 
     def open_note(self, instance):
         title = instance.text
-        note_content = self.notes.get(title, "")
-        print("Open note:", title, note_content)
+        print("Open note:", title, self.notes.get(title, ""))
 
 if __name__ == "__main__":
     NotesApp().run()
