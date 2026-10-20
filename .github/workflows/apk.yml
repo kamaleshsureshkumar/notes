@@ -2,59 +2,74 @@ name: Build Kivy Android APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      ANDROID_HOME: /opt/Android/Sdk
+      ANDROID_SDK_ROOT: /opt/Android/Sdk
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Set up Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          git zip unzip autoconf libtool pkg-config zlib1g-dev \
-          libncurses6 libncursesw6 libffi-dev libssl-dev build-essential \
-          ccache libltdl-dev wget
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip autoconf libtool pkg-config zlib1g-dev \
+            libncurses6 libncursesw6 libffi-dev libssl-dev build-essential \
+            ccache libltdl-dev wget ca-certificates
 
-    - name: Install Buildozer and Cython
-      run: |
-        python -m pip install --upgrade "pip<24"
-        python -m pip install --upgrade "setuptools<70" "wheel" "cython<3.0.0" "sh<2.0" "buildozer==1.5.0" "python-for-android==2024.01.21"
+      - name: Install Android commandline tools
+        run: |
+          mkdir -p /opt/Android
+          cd /opt/Android
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q -o cmdline-tools.zip
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          if [ -d "cmdline-tools" ]; then
+            rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+            mv cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          fi
+          ls -R "$ANDROID_HOME"
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2"
 
-    - name: Install Android SDK components
-      run: |
-        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
-        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
-        "platform-tools" \
-        "platforms;android-33" \
-        "build-tools;33.0.2"
+      - name: Install Buildozer and deps
+        run: |
+          python -m pip install --upgrade "pip<24"
+          python -m pip install --upgrade \
+            "setuptools<70" "wheel" "cython<3.0.0" "sh<2.0" \
+            "buildozer==1.5.0" "python-for-android==2024.01.21"
 
-    - name: Build APK with Buildozer
-      working-directory: src
-      run: |
-        buildozer -v android debug
+      - name: Build APK with Buildozer
+        working-directory: src
+        run: |
+          buildozer -v android debug
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: kivy-android-apk
-        path: src/bin/*.apk
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivy-android-apk
+          path: src/bin/*.apk
