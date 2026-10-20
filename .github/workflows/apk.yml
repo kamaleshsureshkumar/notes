@@ -37,6 +37,7 @@ jobs:
 
       - name: Install Android SDK tools and Build Tools
         run: |
+          set -eux
           mkdir -p /opt/Android
           cd /opt/Android
 
@@ -47,6 +48,10 @@ jobs:
           rm -rf "$ANDROID_HOME/cmdline-tools/latest"
           mv /opt/Android/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
 
+          # Required by older Buildozer / python-for-android
+          mkdir -p "$ANDROID_HOME/tools"
+          ln -sfn "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/tools/bin"
+
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
             "platform-tools" \
@@ -55,12 +60,12 @@ jobs:
 
           mkdir -p ~/.buildozer/android/platform
           rm -rf ~/.buildozer/android/platform/android-sdk
-          ln -s "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
+          ln -sfn "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
 
           echo "SDK path:"
-          ls -ld ~/.buildozer/android/platform/android-sdk
-          echo "Build-tools:"
-          ls ~/.buildozer/android/platform/android-sdk/build-tools
+          ls -ld "$ANDROID_HOME" ~/.buildozer/android/platform/android-sdk
+          echo "Legacy SDK/bin path:"
+          ls -l "$ANDROID_HOME/tools/bin/sdkmanager"
 
       - name: Install Buildozer and Cython
         run: |
