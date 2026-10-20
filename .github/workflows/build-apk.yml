@@ -41,6 +41,7 @@ jobs:
       env:
         ANDROIDSDK: $HOME/android
         ANDROIDNDK: $HOME/android/ndk/25.2.9519653
+      working-directory: src
       run: |
         buildozer android release
 
