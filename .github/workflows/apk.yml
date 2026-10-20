@@ -37,24 +37,30 @@ jobs:
         python -m pip install --upgrade pip
         pip install "cython<3.0.0" buildozer python-for-android
 
-    - name: Fix Android SDK Command-Line Tools for Buildozer
+    - name: Setup Global Android SDK & Command-Line Tools
       run: |
-        # Create standard buildozer android SDK folders
-        ANDROID_SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
-        mkdir -p "$ANDROID_SDK_DIR/tools/bin"
-        
+        export ANDROID_HOME=/opt/android-sdk
+        sudo mkdir -p $ANDROID_HOME/cmdline-tools
+        sudo chmod -R 777 $ANDROID_HOME
+
         # Download official Android Command-Line Tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
-        unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools-temp
+        unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools-extracted
+        sudo mv /tmp/cmdtools-extracted/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+
+        # Create the legacy tools/bin symlink structure inside /opt/android-sdk so python-for-android finds it
+        sudo mkdir -p $ANDROID_HOME/tools/bin
+        sudo ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
+
+        # Export environment variables globally for the runner
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROIDSDK=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/25.b" >> $GITHUB_ENV
         
-        # Structure them so legacy buildozer scripts can find 'tools/bin/sdkmanager'
-        mkdir -p /tmp/cmdtools-temp/cmdline-tools/latest
-        mv /tmp/cmdtools-temp/cmdline-tools/bin /tmp/cmdtools-temp/cmdline-tools/latest/
-        mv /tmp/cmdtools-temp/cmdline-tools/lib /tmp/cmdtools-temp/cmdline-tools/latest/
-        mv /tmp/cmdtools-temp/cmdline-tools/source.properties /tmp/cmdtools-temp/cmdline-tools/latest/ || true
-        
-        cp -r /tmp/cmdtools-temp/cmdline-tools/* "$ANDROID_SDK_DIR/"
-        ln -s "$ANDROID_SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_SDK_DIR/tools/bin/sdkmanager" || true
+        # Accept licenses and install platform tools
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses || true
+        sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
     - name: Build APK with Buildozer
       working-directory: src

@@ -438,18 +438,10 @@ log_level = 2
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
 
-
-# (int) Target Android API, 33 or 34 is recommended
 android.api = 33
-
-# (int) Minimum API supported
 android.minapi = 24
-
-# (str) Android NDK version to use
 android.ndk = 25b
-
-# (str) Android Build Tools version to use (Explicitly specifying this fixes the aidl error)
-android.build_tools_version = 33.0.2
-
-# (bool) Accept SDK licenses automatically
 android.accept_sdk_license = True
+
+# Explicitly tell buildozer where the SDK is located
+android.sdk_path = /opt/android-sdk
